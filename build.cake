@@ -6,8 +6,8 @@ var output = Argument("output", "");
 
 Setup(ctx => {
     Information("");
-    Information(Figlet("sugcon.eu"));
-	Information("Sitecore Host Messaging Plugins");
+    Information(Figlet("Sitecore Host"));
+	Information("RabbitMQ Messaging Plugins");
 });
 
 Task("Clean")
