@@ -1,10 +1,8 @@
-#addin "nuget:?package=Cake.PowerShell&version=0.4.7"
 #addin "nuget:?package=Cake.Figlet&version=1.2.0"
-#addin "nuget:?package=Cake.Docker&version=0.9.9"
-
-var hostPath = @"C:\inetpub\wwwroot\sc910.identityserver";
 
 var target = Argument("target", "Default");
+var configuration = Argument("configuration", "Release");
+var output = Argument("output", "");
 
 Setup(ctx => {
     Information("");
@@ -20,53 +18,22 @@ Task("Clean")
 );
 
 Task("Pack")
+	.IsDependentOn("Clean")
 	.DoesForEach(GetFiles("./src/**/*.csproj"), project =>
 	{
-		DotNetCorePack(project.GetDirectory().FullPath, new DotNetCorePackSettings {
-			IncludeSymbols = true
-		});
-	});
+		var settings = new DotNetCorePackSettings {
+			Configuration = configuration
+		};
 
-Task("Deploy Plugins")
-	.IsDependentOn("Pack")
-	.DoesForEach(GetFiles("./src/**/*.nupkg"), package => 
-	{
-		StartPowershellScript("Install-ScHostPackage", args => 
+		if (!string.IsNullOrEmpty(output))
 		{
-			args.Append("Path", package.FullPath)
-				.Append("HostPath", hostPath)
-				.Append("Runtime", "");
-		});
+			settings.OutputDirectory = output;
+		}
+
+		DotNetCorePack(project.GetDirectory().FullPath, settings);
 	});
 
-Task("DockerBuild")
-	.Does(() => {
-		DockerBuild(
-			new DockerImageBuildSettings {
-				Rm = true,
-				Isolation = "process",
-				Tag = new string[] { "schost:messaging" }
-			},
-			"."
-		);
-	});
-
-Task("DockerRun")
-	.Does(() => {
-		DockerRun(
-			new DockerContainerRunSettings {
-				Isolation = "process"
-			},
-			"schost:messaging",
-			""
-		);
-	});
-
-Task("DockerRm")
-	.Does(() => {
-
-	});
-
-Task("Default");
+Task("Default")
+	.IsDependentOn("Pack");
 
 RunTarget(target);
